@@ -1,0 +1,172 @@
+/***********************************************************************
+*
+*                    NAS Parallel Benchmarks 3.0
+*
+*                    Unofficial OpenMP C Version
+*
+*  Copyright 2014 University of Versailles Saint Quentin en Yvlines  
+*  Copyright 2000 Omni OpenMP Compiler Project 
+*  Copyright 1991-2014 NASA Advanced Supercomputing Division
+*
+*                         November 08, 2014
+*
+***********************************************************************/
+
+1. Introduction
+
+This package contains an unofficial C version of the NAS Parallel Benchmarks
+OpenMP 3.0.  The benchmarks are derived from the Omni OpenMP Compiler Project
+2.3 unofficial C version of NPB 2.3.
+
+The benchmarks were modified to match the new official 3.0 Fortran NPB.
+benchmarks. In particular, benchmarks in this release follow the same parallel
+region structure than the official 3.0 Fortran NPB.
+
+2. Change Log
+
+This section tracks all the modifications that were made to update the
+Omni OpenMP 2.3 unofficial C version to the 3.0 version.
+
+Each modification includes an annotation of the form XXX:YYY,
+where XXX is the line number in the 2.3 version and YYY is the 
+line number in the 3.0 version.
+
+BT
+  * Transforms the initialization process into distinct parallel regions:
+    129:127 - initialize  
+    131:128 - lhsinit
+    133:129 - exact_rhs
+  * Splits adi function into separated parallel regions:
+    211:206 - compute_rhs
+    213:209 - x_solve
+    215:212 - y_solve
+    217:215 - z_solve
+    219:218 - add
+  * TODO - Initialization part different 
+
+CG
+  * Updates sparse in makea
+    761:756 - add preload data pages parallel region loop 
+  * Splits the first main parallel region 
+    187:195 - initialization parallel region in main are reduced and single regions are replaced by serial parts 
+    356:347 - conj grad (see below)
+    209:219 - three loops parallelization        
+  * Decompose Conj grad function into parallel regions 
+    402:395 - initialize conj grad algorithm
+    413:405 - conj grad iteration loop
+    551:551 - compute residual norm explicitly             
+  * Split the second main parallel region
+    261:260 - conj grad
+    275:271 - post conj grad two loops parallelization
+  * 78:78 - Remove temporarry array w 
+  * 375:367 - Remove static variables in conj grad since they are initialized at each iteration
+  * 500:494 - Add barrier after reduction because LLVM OpenMP does not support implicit synchronization after a reduction
+  * 504:498 - Remove single because all the variables are private due to parallel regions updates
+
+EP
+  * Parallelizes x-array initialization
+    109:110 - main
+
+FT
+  * Splits the first main parallel region   
+    123:123 - compute_indexmap
+    131:130 - fft (see below)
+  * Splits the second main parallel region   
+    176:168 - evolve
+    164:158 - fft
+    187:177 - fft
+    845:849 - checksum 
+  * Decompose fft into parallel regions
+    514:501 - cffts1
+    562:556 - cffts2
+    607:606 - cffts3    
+  * define y0 and y1 in cffts[123] on the stack because there is no pointer in fortran
+  * TODO - need to insert init_ui to touch the initial data 
+
+IS
+  * Already in C
+
+LU
+  * Splits into parallel regions boundaries and initialization of dependent variables and also forcing term computing
+    125:123 - setbv
+    130:128 - setiv
+    135:133 - erhs
+  * Produces setparte parallel regions for ssor
+    3073:3092 - l2norm
+    3068:3087 - rhs
+    3064:3083 - SSOR initialization
+    3094:3112 - SSOR iteration 
+  * TODO - Parallelize post computation part
+    - error 
+    - pintgr
+
+MG
+  * Turns omp parallel region into omp parallel loop for 
+    1239:1211 - zero3
+  * Split first big parallel region  
+    238:233 - norm2u3
+    257:249 - mg3P 
+    258:243 - resid  
+  * Splits the main iteration big parallel region
+    273:262- resid
+    274:263 - norm2u3
+    277:266 - mg3P   
+  * Transforms the omp parallel region into omp parallel loops from main and mg3P
+    846:826 - norm2u3  
+    527:516 - resid
+    608:595 - rprj3
+    1245:1217 - zero3    
+    463:454 - psinv
+    684:669 - interep (produces two parallel regions)    
+  * 820:835 - Remove static because of algorithmic changes 
+  * 836:862 - Algorithmic changes 
+  
+SP
+  * Splits adi function into separated parallel regions:
+    205:204 - compute_rhs
+    208:207 - txinvr
+    211:210 - x_solve and ninvr
+    214:213 - y_solve and tzetar
+    216:216 - z_solve and pinvr
+    220:219 - add
+  * TODO - Initialize has to be updated 
+    - 654:659 parallelize the function
+  * TODO - Post computation verify has to be parallelized   
+    221:226 - error_norm 
+    
+3. Installation
+
+THe package should contain the following files/directories:
+
+  README - this file
+  README.omc - Readme of the Omni OpenMP Compiler release
+  LOG.omc - Change log of the Omni OpenMP Compiler release
+  Makefile - makefile for the suite (not modified from NPB2.3-omp)
+  Doc - documentations (not modified from NPB2.3-serial)
+  BT, CG, EP, FT, IS, LU, MG, SP - directory for each program
+  bin - directory to put executable files
+  common - common routines (only change version display from NPB2.3-omp)
+  config - configuration files used by 'make' (not modified from NPB2.3-omp)
+  sys - utilities (only change version display from NPB2.3-omp)
+  
+To use the suite, edit file 'make.def' in directory 'config'.
+You must specify the name of compiler and linker, and compiler options.  
+For more details, refer to file "README.install" in subdirectory "Doc" and to "README.omc".
+
+4. Information
+
+- Original benchmark suite
+
+  Information on the NAS Parallel Benchmarks is available at
+  http://www.nas.nasa.gov/NAS/NPB/.
+
+- C translation
+
+  Information on the OpenMP C versions and the Omni OpenMP compiler is 
+  available at http://pdplab.trc.rwcp.or.jp/pdperf/Omni/.
+
+- 3.0 NAS update 
+  
+  Information on the NAS Parallel Benchmarks translation from 2.3 to 3.0 is available at http://benchmark-subsetting.github.io/cNPB/
+  Note that NAS does not support the OpenMP C versions nor the Omni OpenMP compiler supports the 3.0 structured NAS.
+  License informations about the NAS NPB benchmarks can be found at http://opensource.org/licenses/nasa1.3.php   
